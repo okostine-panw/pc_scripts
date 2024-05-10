@@ -1,0 +1,213 @@
+{
+  "modified": "2024-05-02T14:31:34.754Z",
+  "owner": "@paloaltonetworks.com",
+  "name": "Staging Web Applications",
+  "previousName": "",
+  "disabled": true,
+  "notes": "Apps running on staging",
+  "collections": [
+    {
+      "hosts": [
+        "gke-private-sta-*"
+      ],
+      "images": [
+        "*"
+      ],
+      "labels": [
+        "*"
+      ],
+      "containers": [
+        "*"
+      ],
+      "functions": [
+        "*"
+      ],
+      "namespaces": [
+        "*"
+      ],
+      "appIDs": [
+        "*"
+      ],
+      "accountIDs": [
+        "*"
+      ],
+      "clusters": [
+        "*"
+      ],
+      "name": "Staging Web Apps",
+      "owner": "",
+      "modified": "2024-05-02T11:28:03.878Z",
+      "color": "#AB15D2",
+      "description": "Web Applications running on staging",
+      "system": false,
+      "prisma": false
+    }
+  ],
+  "applicationsSpec": [
+    {
+      "appID": "app-1234",
+      "sessionCookieSameSite": "Lax",
+      "customBlockResponse": {},
+      "banDurationMinutes": 5,
+      "certificate": {
+        "encrypted": ""
+      },
+      "tlsConfig": {
+        "minTLSVersion": "",
+        "metadata": {
+          "notAfter": "0001-01-01T00:00:00Z",
+          "issuerName": "",
+          "subjectName": ""
+        },
+        "HSTSConfig": {
+          "enabled": false,
+          "maxAgeSeconds": 31536000,
+          "includeSubdomains": false,
+          "preload": false
+        }
+      },
+      "dosConfig": {
+        "enabled": false,
+        "alert": {},
+        "ban": {}
+      },
+      "apiSpec": {
+        "endpoints": [
+          {
+            "host": "*",
+            "basePath": "*",
+            "exposedPort": 0,
+            "internalPort": 0,
+            "tls": false,
+            "http2": false,
+            "grpc": false
+          }
+        ],
+        "effect": "disable",
+        "fallbackEffect": "disable",
+        "queryParamFallbackEffect": "disable"
+      },
+      "botProtectionSpec": {
+        "userDefinedBots": [],
+        "knownBotProtectionsSpec": {
+          "searchEngineCrawlers": "disable",
+          "businessAnalytics": "disable",
+          "educational": "disable",
+          "news": "disable",
+          "financial": "disable",
+          "contentFeedClients": "disable",
+          "archiving": "disable",
+          "careerSearch": "disable",
+          "mediaSearch": "disable"
+        },
+        "unknownBotProtectionSpec": {
+          "generic": "disable",
+          "webAutomationTools": "disable",
+          "webScrapers": "disable",
+          "apiLibraries": "disable",
+          "httpLibraries": "disable",
+          "botImpersonation": "disable",
+          "browserImpersonation": "disable",
+          "requestAnomalies": {
+            "threshold": 9,
+            "effect": "disable"
+          }
+        },
+        "sessionValidation": "disable",
+        "interstitialPage": false,
+        "jsInjectionSpec": {
+          "enabled": false,
+          "timeoutEffect": "disable"
+        },
+        "reCAPTCHASpec": {
+          "enabled": false,
+          "siteKey": "",
+          "secretKey": {
+            "encrypted": ""
+          },
+          "type": "checkbox",
+          "allSessions": true,
+          "successExpirationHours": 24,
+          "customPageSpec": {}
+        }
+      },
+      "networkControls": {
+        "advancedProtectionEffect": "alert",
+        "subnets": {
+          "enabled": false,
+          "allowMode": true,
+          "fallbackEffect": "alert"
+        },
+        "countries": {
+          "enabled": false,
+          "allowMode": true,
+          "fallbackEffect": "alert"
+        },
+        "networkControlsExceptionSubnets": {
+          "subnets": []
+        }
+      },
+      "body": {
+        "inspectionSizeBytes": 131072,
+        "inspectionLimitExceededEffect": "disable"
+      },
+      "intelGathering": {
+        "infoLeakageEffect": "disable",
+        "removeFingerprintsEnabled": false
+      },
+      "maliciousUpload": {
+        "effect": "disable",
+        "allowedFileTypes": [],
+        "allowedExtensions": []
+      },
+      "csrfEnabled": false,
+      "clickjackingEnabled": false,
+      "sqli": {
+        "effect": "alert",
+        "exceptionFields": []
+      },
+      "xss": {
+        "effect": "alert",
+        "exceptionFields": []
+      },
+      "attackTools": {
+        "effect": "alert",
+        "exceptionFields": []
+      },
+      "shellshock": {
+        "effect": "alert",
+        "exceptionFields": []
+      },
+      "malformedReq": {
+        "effect": "alert",
+        "exceptionFields": []
+      },
+      "cmdi": {
+        "effect": "alert",
+        "exceptionFields": []
+      },
+      "lfi": {
+        "effect": "alert",
+        "exceptionFields": []
+      },
+      "codeInjection": {
+        "effect": "alert",
+        "exceptionFields": []
+      },
+      "remoteHostForwarding": {},
+      "autoApplyPatchesSpec": {
+        "effect": "alert"
+      },
+      "disableEventIDHeader": true
+    }
+  ],
+  "readTimeoutSeconds": 5,
+  "windows": false,
+  "skipAPILearning": false,
+  "autoProtectPorts": true,
+  "trafficMirroring": {},
+  "outOfBandScope": "host",
+  "policyType": "outOfBandAppFirewall",
+  "exportTime": "05_02_24_15_31_53",
+  "exportBy": "@paloaltonetworks.com"
+}
