@@ -107,11 +107,19 @@ def main():
             if str(last_login) == "-1" and last_modified and check_never_logged_on_and_old(last_modified):
                 last_modified_time = datetime.datetime.fromtimestamp(last_modified / 1000.0)
                 print(f"Deleting User: {user_login}, never logged on, last modified {last_modified_time}.")
-                delete_user(token, user_login)
+                confirm = input("Are you sure you want to delete this user? (yes/no): ").strip().lower()
+                if confirm == 'yes':
+                    delete_user(token, user_login)
+                else:
+                    print("Deletion cancelled.")
             elif last_login not in (None, "-1") and check_inactivity(last_login):
                 last_login_time = datetime.datetime.fromtimestamp(last_login / 1000.0)
                 print(f"Deleting User: {user_login} who last logged in {last_login_time}.")
-                delete_user(token, user_login)
+                confirm = input("Are you sure you want to delete this user? (yes/no): ").strip().lower()
+                if confirm == 'yes':
+                    delete_user(token, user_login)
+                else:
+                    print("Deletion cancelled.")
         else:
             print(f"User with ID {user_login} not found")
 
