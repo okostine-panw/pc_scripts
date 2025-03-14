@@ -1,0 +1,19 @@
+{
+    // used for API_config-COMPANY.ini and filenames
+    "COMPANY": "pcs",
+    // Used for results filenames
+    "FILENAME_PREFIX": "os.path.basename(__file__)",
+    // disable SSL cert verification for proxies that don't support it
+    //or if CA cert chain is not possible to generate for this script
+    "SSL_VERIFY": false,
+    // Compute data refresh check in hours
+    "RUN_ON_WINDOWS": false, // disable uvloop, also need to remove it from import statement and pyproject.toml
+    // Defender collection example:
+//    "COLLECTION_NAME": "collection-test-defender",
+//    "HOSTNAME_FILTER": "pcs-demo-compute-scanner",
+//    "HOST_TYPE": "defender" // defender for registry scans, etc, '' for anything else
+    // Cluster node collection example:
+    "COLLECTION_NAME": "collection-test-aks-cluster",
+    "HOSTNAME_FILTER": "aks-agentpool-",
+    "HOST_TYPE": "" // defender for registry scans, etc, '' for anything else
+}

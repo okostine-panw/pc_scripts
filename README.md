@@ -70,12 +70,19 @@ uv run main-vulntags-baseline.py
 
 ### delete_stale_users.py
 delete_stale_users.py - delete inactive users that have not logged in after a pre-defined time period (not_active_days) or users that have never logged and have not been modified/created for a given time period (never_login_after_days).
+
 ### copy_compliance_report.py
 copy_compliance_report.py - generates new copies of existing reports for new compliance standard by cloning existing reports for a given "old" compliance standard, need to provide Old and New Compliance Standard IDs
+
 ### main-vulntags-baseline.py
 main-vulntags-baseline.py - creates Vulnerability Tag to use for exceptions, retrieves vulnerabilities based on vulnerability search criteria and assigns CVEs for each resource type to this tag.
 See config.jsonc for more options
-#### Usage
+
+### main-update-collections.py
+main-update-collections.py - update collections for hosts dynamically matching host filter, works for two types: hosts for clusters, etc. and for defenders based collections (registry scanning)
+See config-collections.jsonc for more options
+
+#### ### main-vulntags-baseline.py Usage
   ```
 % uv run main-vulntags-baseline.py
 2025-03-14 12:02:57 - DEBUG - get_vulnerabilities - 423 - Query: {'query': "vulnerability where risk.factors IN ( 'Exploit Exists - In The Wild', 'Exploit Exists - Poc' ) AND severity = 'Critical' AND asset.lifecycle = 'run'"}
