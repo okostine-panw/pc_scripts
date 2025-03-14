@@ -223,56 +223,12 @@ def write_data_to_json(data, file_name, data_type):
     data.to_json(file_name, orient='records')
     logging.info(f'{data_type.capitalize()} results data written to {file_name}')
 
-
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=3, min=1, max=30))
-async def make_get_request(url, token_manager, session, semaphore, max_retries=5, backoff_factor=3):
-    """Make an authenticated GET request with rate-limiting and streaming JSON processing."""
+async def make_request(method, url, token_manager, session, semaphore, payload=None, max_retries=5, backoff_factor=3):
+    """Generic async request function with retry logic for GET, POST, PUT."""
     status_forcelist = {429, 500, 502, 503, 504}  # Retry on these status codes
-    async with semaphore:
-        for attempt in range(1, max_retries + 1):
-            try:
-                token = await token_manager.get_token()
-                headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json', 'Accept': 'application/json'}
-                async with session.get(url, headers=headers, ssl=SSL_VERIFY, timeout=60) as response:
-                    if response.status == 200:
-                        json_chunks = []  # Stream JSON response efficiently using `aiter_bytes()`
-                        async for chunk in response.content.iter_any(): json_chunks.append(chunk)
-                        json_data = orjson.loads(b"".join(json_chunks))  # Use orjson for fast parsing
-                        return json_data, response.status
-                    elif response.status == 401:
-                        logging.error(f'401 Unauthorized on attempt {attempt}: Renewing token and retrying.')
-                        await token_manager._renew_token()
-                    elif response.status == 429:
-                        retry_after = response.headers.get('Retry-After')
-                        wait_time = int(retry_after) if retry_after and retry_after.isdigit() else backoff_factor ** (attempt - 1)
-                        logging.error(f'429 Too Many Requests. Waiting {wait_time:.2f} seconds before retrying.')
-                        await asyncio.sleep(wait_time)
-                    elif response.status in status_forcelist:
-                        logging.error(f'Retryable error {response.status} on attempt {attempt}/{max_retries}: {url}')
-                        if attempt == max_retries:
-                            logging.error(f'Max retries reached. Failed to fetch data: {url}')
-                            return None, response.status
-                        await asyncio.sleep(backoff_factor ** (attempt - 1))
-                    else:
-                        logging.error(f'Non-retryable error {response.status}: {url}')
-                        return None, response.status
-            except aiohttp.ClientResponseError as e:
-                logging.error(f'Retryable HTTP error {e.status} on attempt {attempt}/{max_retries}: {url}')
-                if attempt == max_retries:
-                    logging.error(f'Max retries reached. Failed to fetch data: {url}')
-                    return None, e.status
-                await asyncio.sleep(backoff_factor ** (attempt - 1))
-            except Exception as e:
-                logging.error(f'Unexpected error: {e}. Attempt {attempt}/{max_retries}. URL: {url}')
-                if attempt == max_retries:
-                    logging.error('Max retries reached. Aborting.')
-                    return None, None
-                await asyncio.sleep(backoff_factor ** (attempt - 1))
+    method = method.upper()  # Ensure method is uppercase
 
-@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=3, min=1, max=30))
-async def make_post_request(url, token_manager, payload, session, semaphore, max_retries=5, backoff_factor=2):
-    """Makes a POST request with retry logic and token handling."""
-    status_forcelist = {429, 500, 502, 503, 504}  # Retry on these status codes
     async with semaphore:
         for attempt in range(1, max_retries + 1):
             try:
@@ -281,92 +237,51 @@ async def make_post_request(url, token_manager, payload, session, semaphore, max
                     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json', 'Accept': 'application/json'}
                 else:
                     headers = {"X-Redlock-Auth": token, "Content-Type": "application/json", "Accept": "application/json"}
+                request_kwargs = {"headers": headers, "ssl": SSL_VERIFY}
 
-                async with session.post(url, headers=headers, json=payload, ssl=SSL_VERIFY) as response:
-                    if response.status == 200:
-                        content_type = response.headers.get("Content-Type", "")
-
-                        # Check if the response is actually JSON
-                        if "application/json" in content_type:
-                            return await response.json(), response.status
-                        elif not content_type or "text/html" in content_type or "text/plain" in content_type:
-                            logging.warning(f"Expected JSON but got {content_type}. Response: {await response.text()}")
-                            return None, response.status  # Return None to avoid JSON decode errors
-                        else:
-                            logging.warning(f"Unexpected content type: {content_type}. Response: {await response.text()}")
-                            return None, response.status
-                    elif response.status == 401:
-                        logging.error(f'401 Unauthorized on attempt {attempt}: Renewing token and retrying.')
-                        await token_manager._renew_token()
-                    elif response.status in status_forcelist:
-                        logging.error(f'Retryable error {response.status} on attempt {attempt}/{max_retries}: {url}')
-                        if attempt == max_retries:
-                            logging.error(f'Max retries reached. Failed to create data: {url}')
-                            return None, response.status
-                        await asyncio.sleep(backoff_factor ** (attempt - 1))
-                    else:
-                        logging.error(f'Non-retryable error {response.status}: {url}')
-                        return None, response.status
-            except ClientResponseError as e:
-                if e.status in status_forcelist:
-                    logging.error(f'Retryable HTTP error {e.status} on attempt {attempt}/{max_retries}: {url}')
-                    if attempt == max_retries:
-                        logging.error(f'Max retries reached. Failed to create data: {url}')
-                        return None, e.status
-                    await asyncio.sleep(backoff_factor ** (attempt - 1))
+                if method == "GET":
+                    request_method = session.get
+                elif method == "POST":
+                    request_method = session.post
+                    request_kwargs["json"] = payload
+                elif method == "PUT":
+                    request_method = session.put
+                    request_kwargs["json"] = payload
                 else:
-                    logging.error(f'Non-retryable HTTP error {e}. URL: {url}')
-                    return None, e.status
-            except Exception as e:
-                logging.error(f'Unexpected error: {e}. Attempt {attempt}/{max_retries}. URL: {url}')
-                if attempt == max_retries:
-                    logging.error('Max retries reached. Aborting.')
-                    return None, None
-                await asyncio.sleep(backoff_factor ** (attempt - 1))
+                    logging.error(f"Unsupported HTTP method: {method}")
+                    return None, 405  # 405 Method Not Allowed
 
-@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=3, min=1, max=30))
-async def make_put_request(url, token_manager, payload, session, semaphore, max_retries=5, backoff_factor=2):
-    """Makes a PUT request with retry logic and token handling."""
-    status_forcelist = {429, 500, 502, 503, 504}  # Retry on these status codes
-    async with semaphore:
-        for attempt in range(1, max_retries + 1):
-            try:
-                token = await token_manager.get_token()
-                headers = {
-                    'Authorization': f'Bearer {token}',
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-                async with session.put(url, headers=headers, json=payload, ssl=SSL_VERIFY) as response:
+                logging.debug(f"DEBUG: Attempt {attempt}/{max_retries}, Method={method}, URL={url}")
+
+                async with request_method(url, **request_kwargs) as response:
                     status_code = response.status
-                    # Fix: Only parse JSON if response has valid JSON content
+                    content_type = response.headers.get("Content-Type", "")
+                    # Handle successful response
                     if status_code == 200:
-                        if response.content_length and response.content_type and response.content_type.startswith("application/json"):
-                            try:
-                                response_data = await response.json()
-                                return response_data, status_code
-                            except Exception:
-                                logging.warning(f"Received status 200 but response is not valid JSON. URL: {url}")
-                                return None, status_code  # Ignore parsing error for non-JSON responses
-                        return None, status_code  # If there's no JSON response, just return status
-
+                        if "application/json" in content_type:
+                            return await response.json(), status_code
+                        logging.warning(f"Expected JSON but got {content_type}. Response: {await response.text()}")
+                        return None, status_code  # Return None if non-JSON response
+                    # Handle authentication errors
                     elif status_code == 401:
                         logging.error(f'401 Unauthorized on attempt {attempt}: Renewing token and retrying.')
-                        await token_manager._refresh_token()
+                        await token_manager._renew_token()
+                    # Handle retryable errors
                     elif status_code in status_forcelist:
                         logging.error(f'Retryable error {status_code} on attempt {attempt}/{max_retries}: {url}')
                         if attempt == max_retries:
-                            logging.error(f'Max retries reached. Failed to update data: {url}')
+                            logging.error(f'Max retries reached. Failed to process request: {url}')
                             return None, status_code
                         await asyncio.sleep(backoff_factor ** (attempt - 1))
+                    # Handle non-retryable errors
                     else:
-                        logging.error(f'Non-retryable HTTP error {status_code}, message={response.reason}, url={url}')
+                        logging.error(f'Non-retryable error {status_code}, message={response.reason}, url={url}')
                         return None, status_code
             except ClientResponseError as e:
                 if e.status in status_forcelist:
                     logging.error(f'Retryable HTTP error {e.status} on attempt {attempt}/{max_retries}: {url}')
                     if attempt == max_retries:
-                        logging.error(f'Max retries reached. Failed to update data: {url}')
+                        logging.error(f'Max retries reached. Failed to process request: {url}')
                         return None, e.status
                     await asyncio.sleep(backoff_factor ** (attempt - 1))
                 else:
@@ -384,7 +299,7 @@ async def get_vulnerability_tags(computeurl, ctoken_manager, session, semaphore)
     """Fetch vulnerability tags from Twistlock API using `make_get_request()`."""
     get_tags_url = f'{computeurl}/api/v1/tags'
     # Use make_get_request for better error handling and retries
-    response_data, status_code = await make_get_request(get_tags_url, ctoken_manager, session, semaphore)
+    response_data, status_code = await make_request("GET", get_tags_url, ctoken_manager, session, semaphore)
     if response_data is None or status_code != 200:
         logging.warning(f"Failed to fetch tags. Status Code: {status_code}")
         return []
@@ -402,7 +317,7 @@ async def create_vulnerability_tags(computeurl, ctoken_manager, tag_name, tag_de
     logging.debug(f"Tag '{tag_name}' {payload}")
 
     create_tags_url = f"{computeurl}/api/v1/tags"
-    response_data, status_code = await make_post_request(create_tags_url, ctoken_manager, payload, session, semaphore)
+    response_data, status_code = await make_request("POST", create_tags_url, ctoken_manager, session, semaphore, payload=payload)
     if status_code == 200:
         logging.info(f"Tag '{tag_name}' created successfully.")
     else:
@@ -427,7 +342,7 @@ async def get_vulnerabilities(baseurl, token_manager, asset_type, session, semap
     total_vulnerabilities = 0
     total_assets = 0
     while True:
-        response, status_code = await make_post_request(vulnerabilities_search_url, token_manager, payload, session, semaphore)
+        response, status_code = await make_request("POST", vulnerabilities_search_url, token_manager, session, semaphore, payload)
         if response is None or status_code != 200:
             logging.error(f"Failed to fetch vulnerabilities data: Status Code: {status_code}")
             break
@@ -462,31 +377,31 @@ async def get_vulnerabilities(baseurl, token_manager, asset_type, session, semap
     return vulnerabilities_list, total_vulnerabilities
 
 
-async def process_vulnerabilities(vulnerabilities_list, vuln_tags, cve_tags_dict):
-    """Process vulnerabilities and update cve_tags_dict for each asset type separately."""
-
-    for item in vulnerabilities_list:
-        # Unpack the tuple correctly
-        cve_id, severity, cvss, epss, exploitable, patchable, hosts_count, deployed_images_count = item
+async def process_vulnerabilities(vulnerabilities_list, vuln_tag, cve_tags_dict):
+    """Processes vulnerabilities and adds them to cve_tags_dict for hosts and images if applicable."""
+    total_added = 0  # Track the number of entries added
+    for cve_id, severity, cvss, epss, exploitable, patchable, hosts_count, deployed_images_count in vulnerabilities_list:
+        cve_id = cve_id.strip()
         if not cve_id:
-            logging.debug(f"Skipping invalid CVE ID: {item}")
+            logging.debug(f"Skipping invalid CVE ID: {cve_id}")
             continue
-        # Check if we need to process the CVE for both host and image
-        process_types = []
-        if hosts_count is not None:
-            process_types.append("host")
-        if deployed_images_count is not None:
-            process_types.append("image")
-        for asset_type in process_types:
-            # Ensure vuln_tags is treated as a list, even if it's a single tag
-            if isinstance(vuln_tags, str):
-                vuln_tags = [vuln_tags]  # Convert string to list for iteration
-            for tag in vuln_tags:
-                # Ensure the CVE is added twice if needed (one for host, one for image)
-                cve_tags_dict = add_to_cve_tags_dict(
-                    cve_tags_dict, tag, cve_id, "*", asset_type, "*"
-                )
-                logging.debug(f"Added CVE: {cve_id} with asset_type: {asset_type} under tag: {tag}")
+        added_host = added_image = False  # Track if both are added
+        # Process as "host" if hostsCount is present
+        if hosts_count and hosts_count > 0:
+            logging.debug(f"Adding CVE: {cve_id} with asset_type: host under tag: {vuln_tag} (hostsCount={hosts_count})")
+            cve_tags_dict = add_to_cve_tags_dict(cve_tags_dict, vuln_tag, cve_id, package_name="*", asset_type="host", name="*")
+            added_host = True
+        # Process as "image" if deployedImagesCount is present
+        if deployed_images_count and deployed_images_count > 0:
+            logging.debug(f"Adding CVE: {cve_id} with asset_type: image under tag: {vuln_tag} (deployedImagesCount={deployed_images_count})")
+            cve_tags_dict = add_to_cve_tags_dict(cve_tags_dict, vuln_tag, cve_id, package_name="*", asset_type="image", name="*")
+            added_image = True
+        # Track how many entries were added
+        if added_host and added_image:
+            total_added += 2
+        elif added_host or added_image:
+            total_added += 1
+    logging.info(f"Total vulnerabilities processed: {total_added}")
     return cve_tags_dict
 
 
@@ -502,7 +417,9 @@ async def update_vulnerability_tags(computeurl, ctoken_manager, vulntags, cve_ta
             return None
     # Prepare the full payload
     full_payload = {"name": vulntags, "vulns": cve_tags_assign_data['vulns']}
-    response_data, status_code = await make_put_request(update_tags_url, ctoken_manager, full_payload, session, semaphore)
+    # logging.debug(f"Payload: {full_payload}")
+
+    response_data, status_code = await make_request("PUT", update_tags_url, ctoken_manager, session, semaphore, full_payload)
     if status_code == 200:
         logging.info(f"Tag '{vulntags}' updated successfully for {len(full_payload['vulns'])} vulnerabilities.")
     else:
@@ -515,22 +432,25 @@ async def process_tags(computeurl, ctoken_manager, cve_tags_dict, session, semap
     collected_entries = defaultdict(lambda: {
         'comment': 'Updated with API',
         'id': None,
-        'packageName': None,
-        'resourceType': None,
+        'packageName': '',
+        'resourceType': '',
         'resources': []
     })
     for cve_id, tag_dict in cve_tags_dict.items():
-        for vulntags, details in tag_dict.items():
-            details['resources'] = list(details['resources'])  # Convert set back to list
-            package_name = details.get('packageName', '')  # Ensure safe extraction
-            resource_type = details.get('resourceType', '')
-            key = (vulntags, cve_id, package_name, resource_type)
+        for vulntags, asset_types in tag_dict.items():  # Ensure multiple asset types per CVE
+            for asset_type, details in asset_types.items():
+                # Ensure 'resources' exists and is a list
+                details['resources'] = list(details.get('resources', []))
+                package_name = details.get('packageName', '')
+                resource_type = details.get('resourceType', '')
 
-            collected_entries[key]['id'] = cve_id
-            collected_entries[key]['packageName'] = details['packageName']
-            collected_entries[key]['resourceType'] = details['resourceType']
-            collected_entries[key]['resources'].extend(details['resources'])
-    logging.info(f"Updating Tags")
+                key = (vulntags, cve_id, package_name, resource_type)
+                collected_entries[key]['id'] = cve_id
+                collected_entries[key]['packageName'] = package_name
+                collected_entries[key]['resourceType'] = resource_type
+                collected_entries[key]['resources'].extend(details['resources'])
+
+    logging.info("Updating Tags")
     vuln_tags_payloads = defaultdict(list)
     for key, entry_data in collected_entries.items():
         vulntags, cve_id, package_name, resource_type = key
@@ -545,8 +465,10 @@ async def process_tags(computeurl, ctoken_manager, cve_tags_dict, session, semap
     for vulntags, vulns_list in vuln_tags_payloads.items():
         if not vulns_list:
             continue
-        logging.info(f"Updating {vulntags} tag")
-        response_status = await update_vulnerability_tags(computeurl, ctoken_manager, vulntags, {"name": vulntags, "vulns": vulns_list}, session, semaphore)
+        # logging.debug(f"Payload for {vulntags}: {json.dumps({'name': vulntags, 'vulns': vulns_list}, indent=2)}")
+        response_status = await update_vulnerability_tags(
+            computeurl, ctoken_manager, vulntags, {"name": vulntags, "vulns": vulns_list}, session, semaphore
+        )
         if response_status == 200:
             num_vulns = len(vulns_list)
             total_vulnerabilities_tags_processed += num_vulns
@@ -554,18 +476,23 @@ async def process_tags(computeurl, ctoken_manager, cve_tags_dict, session, semap
             # await asyncio.sleep(20)  # Adjust sleep duration as needed
     print(Fore.CYAN + f"Total vulnerabilities processed across all tags: {total_vulnerabilities_tags_processed}")
 
+
 def add_to_cve_tags_dict(cve_tags_dict, vulntags, cve_id, package_name, asset_type, name):
     if cve_id not in cve_tags_dict:
         cve_tags_dict[cve_id] = {}
     if vulntags not in cve_tags_dict[cve_id]:
-        cve_tags_dict[cve_id][vulntags] = {
+        cve_tags_dict[cve_id][vulntags] = {}
+    # Make sure we allow both `host` and `image` for the same CVE ID
+    if asset_type not in cve_tags_dict[cve_id][vulntags]:
+        cve_tags_dict[cve_id][vulntags][asset_type] = {
             'vulntags': vulntags,
             'packageName': package_name,
             'resourceType': asset_type,
-            'resources': set()  # Use a set to prevent duplicates
+            'resources': []
         }
-    cve_tags_dict[cve_id][vulntags]['resources'].add(name)  # Add ensures uniqueness
+    cve_tags_dict[cve_id][vulntags][asset_type]['resources'].append(name)
     return cve_tags_dict
+
 
 async def get_twistlockUrl(baseurl, token_manager, session):
     """Fetches the twistlockUrl from the meta_info endpoint."""
@@ -605,9 +532,14 @@ async def main():
         semaphore = asyncio.Semaphore(64)  # Limit concurrency
         # Get existing tags
         existing_tags = await get_vulnerability_tags(computeurl, ctoken_manager, session, semaphore)
-        # Create tag if it doe not exist
+        # Create tag if it does not exist
         if VULN_TAG not in existing_tags:
-            await create_vulnerability_tags(computeurl, ctoken_manager, VULN_TAG, VULN_TAG_DESCRIPTION, VULN_TAG_COLOR, session, semaphore)
+            created_status = await create_vulnerability_tags(
+                computeurl, ctoken_manager, VULN_TAG, VULN_TAG_DESCRIPTION, VULN_TAG_COLOR, session, semaphore
+            )
+            if created_status != 200:
+                logging.error(f"Failed to create tag {VULN_TAG}")
+                return
         # Retrieve vulnerabilities
         package_name, asset_type, name = '*', '', '*'
         vulnerabilities_list, total_vulnerabilities = await get_vulnerabilities(baseurl, token_manager, asset_type, session, semaphore)
