@@ -1,0 +1,16 @@
+[project]
+name = "pc-scripts"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.11.13",
+    "asyncio>=3.4.3",
+    "colorama>=0.4.6",
+    "configparser>=7.2.0",
+    "json5>=0.10.0",
+    "orjson>=3.10.15",
+    "tenacity>=9.0.0",
+    "uvloop>=0.21.0",
+]
