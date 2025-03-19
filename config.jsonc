@@ -8,10 +8,13 @@
     "SSL_VERIFY": false,
     // Compute data refresh check in hours
     "RUN_ON_WINDOWS": false, // disable uvloop, also need to remove it from import statement and pyproject.toml
-    "VULN_TAG": "Ignore-Baseline-310325",
+    "VULN_TAG": "2Ignore-Baseline-310325",
     "VULN_TAG_DESCRIPTION": "Baseline to Ignore CVEs as defined in the search criteria before 310325 deadline",
     "VULN_TAG_COLOR": "#ECC8C8",
     "VULN_TYPE_STAGE": "run", // For deployed images
 //    "VULN_TYPE_STAGE": "deploy", // For registry images
-    "VULNERABILITY_QUERY": "vulnerability where risk.factors IN ( 'Exploit Exists - In The Wild', 'Exploit Exists - Poc' ) AND severity = 'Critical' AND asset.lifecycle = "
+    "VULNERABILITY_QUERY": "vulnerability where risk.factors IN ( 'Exploit Exists - In The Wild', 'Exploit Exists - Poc' ) AND severity = 'Critical' AND asset.lifecycle = ",
+    "VULN_HOST_FILTER": "*",
+    "VULN_IMAGE_FILTER": "*",
+    "PACKAGE_NAME_FILTER": "*"
 }

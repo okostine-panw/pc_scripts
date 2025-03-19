@@ -102,6 +102,9 @@ VULN_TAG_DESCRIPTION = config.get("VULN_TAG_DESCRIPTION", [])
 VULN_TAG_COLOR = config.get("VULN_TAG_COLOR", [])
 VULNERABILITY_QUERY = config.get("VULNERABILITY_QUERY", [])
 vuln_query = f"{VULNERABILITY_QUERY}'{VULN_TYPE_STAGE}'"
+VULN_HOST_FILTER = config.get("VULN_HOST_FILTER", [])
+VULN_IMAGE_FILTER = config.get("VULN_IMAGE_FILTER", [])
+PACKAGE_NAME_FILTER = config.get("PACKAGE_NAME_FILTER", [])
 
 # Path to the API config file
 # API_CONFIG_PATH = 'API_config.ini'
@@ -379,6 +382,7 @@ async def get_vulnerabilities(baseurl, token_manager, asset_type, session, semap
 
 async def process_vulnerabilities(vulnerabilities_list, vuln_tag, cve_tags_dict):
     """Processes vulnerabilities and adds them to cve_tags_dict for hosts and images if applicable."""
+    global PACKAGE_NAME_FILTER, VULN_HOST_FILTER, VULN_IMAGE_FILTER
     total_added = 0  # Track the number of entries added
     for cve_id, severity, cvss, epss, exploitable, patchable, hosts_count, deployed_images_count in vulnerabilities_list:
         cve_id = cve_id.strip()
@@ -389,12 +393,12 @@ async def process_vulnerabilities(vulnerabilities_list, vuln_tag, cve_tags_dict)
         # Process as "host" if hostsCount is present
         if hosts_count and hosts_count > 0:
             logging.debug(f"Adding CVE: {cve_id} with asset_type: host under tag: {vuln_tag} (hostsCount={hosts_count})")
-            cve_tags_dict = add_to_cve_tags_dict(cve_tags_dict, vuln_tag, cve_id, package_name="*", asset_type="host", name="*")
+            cve_tags_dict = add_to_cve_tags_dict(cve_tags_dict, vuln_tag, cve_id, package_name=PACKAGE_NAME_FILTER, asset_type="host", name=VULN_HOST_FILTER)
             added_host = True
         # Process as "image" if deployedImagesCount is present
         if deployed_images_count and deployed_images_count > 0:
             logging.debug(f"Adding CVE: {cve_id} with asset_type: image under tag: {vuln_tag} (deployedImagesCount={deployed_images_count})")
-            cve_tags_dict = add_to_cve_tags_dict(cve_tags_dict, vuln_tag, cve_id, package_name="*", asset_type="image", name="*")
+            cve_tags_dict = add_to_cve_tags_dict(cve_tags_dict, vuln_tag, cve_id, package_name=PACKAGE_NAME_FILTER, asset_type="image", name=VULN_IMAGE_FILTER)
             added_image = True
         # Track how many entries were added
         if added_host and added_image:
@@ -417,7 +421,7 @@ async def update_vulnerability_tags(computeurl, ctoken_manager, vulntags, cve_ta
             return None
     # Prepare the full payload
     full_payload = {"name": vulntags, "vulns": cve_tags_assign_data['vulns']}
-    # logging.debug(f"Payload: {full_payload}")
+    logging.debug(f"Payload: {full_payload}")
 
     response_data, status_code = await make_request("PUT", update_tags_url, ctoken_manager, session, semaphore, full_payload)
     if status_code == 200:
@@ -542,6 +546,11 @@ async def main():
                 return
         # Retrieve vulnerabilities
         package_name, asset_type, name = '*', '', '*'
+        # if asset_type == 'host':
+        #     package_name, asset_type, name = 'PACKAGE_NAME_FILTER', 'host', 'VULN_HOST_FILTER'
+        # elif asset_type == 'image':
+        #     package_name, asset_type, name = 'PACKAGE_NAME_FILTER', 'image', 'VULN_IMAGE_FILTER'
+
         vulnerabilities_list, total_vulnerabilities = await get_vulnerabilities(baseurl, token_manager, asset_type, session, semaphore)
         cve_tags_dict = {}
         cve_tags_dict = await process_vulnerabilities(vulnerabilities_list, VULN_TAG, cve_tags_dict)
