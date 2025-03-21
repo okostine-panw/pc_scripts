@@ -24,9 +24,11 @@ UV is the easiest and fastest Python virtual environment tool and is used here, 
 3. Install dependencies from the pyproject.toml (windows does not support uvloop uvtool, please see the comments in the script)
   ```
     cd pc_scripts
-    uv add aiohttp asyncio configparser colorama tenacity json5 orjson uvloop
     uv run
   ```
+Optional manual dependencies install:
+    uv add aiohttp asyncio configparser colorama tenacity json5 orjson uvloop
+
 ## Configuration
 
 ### API Configuration
