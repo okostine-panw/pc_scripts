@@ -85,7 +85,7 @@ main-update-collections.py - update collections for hosts dynamically matching h
 See config-collections.jsonc for more options
 
 ### pc_update_code_notifications_search.py
-pc_update_code_notifications_search.py update existing AppSec Code notifications for repository selection and Error categories. Allows selection of all Public, all private, all repos and search for repositories names to be included, selection of error categories policies to include and severity level. Integration must be already selected via UI to beable to use the script to update notification config for the existing rule. Saves csv file for the processed notification rule repos and policies for debugging.
+pc_update_code_notifications_search.py - update existing AppSec Code notifications for repository selection and Error categories. Allows selection of all Public, all private, all repos and search for repositories names to be included, selection of error categories policies to include and severity level. Integration must be already selected via UI to beable to use the script to update notification config for the existing rule. Saves csv file for the processed notification rule repos and policies for debugging.
 
 ## Usage
 #### ### main-vulntags-baseline.py Usage
