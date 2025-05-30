@@ -87,6 +87,7 @@ See config-collections.jsonc for more options
 ### pc_update_code_notifications_search.py
 pc_update_code_notifications_search.py - update an existing AppSec Code notifications for the repository  and Error categories selection. Allows selection of all Public, all private, all repos and search for repositories names to be included, selection of error categories policies to include and severity level. Works with existing notification rules, the integration must be already configured via UI to be able to use the script to update the existing notification rules config. Saves csv file for the processed notification rule repos and policies for debugging.
 Requires Prisma Cloud AppSec Admin role to modify notification rules config.
+Search is performed with fuzzy logic, current similarity_threshold=0.4, increase the threshold value to get more granular results.
 
 ## Usage
 #### ### main-vulntags-baseline.py Usage
