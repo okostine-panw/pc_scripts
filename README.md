@@ -134,7 +134,7 @@ Total vulnerabilities processed across all tags: 29
   ```
 ### pc_update_code_notifications_search.py usage
   ```
-okostine@M-NVQ4Q57WW1 cloudskates % uv run pc_update_code_notifications_search.py
+cloudskates % uv run pc_update_code_notifications_search.py
 Token expired or not available, refreshing...
 Fetching policies from https://api2.prismacloud.io/bridgecrew/api/v2/policies...
 Successfully fetched policies from the API.
@@ -177,7 +177,7 @@ How would you like to select repositories?
 Please enter the number corresponding to your choice (1, 2, 3, or 4): 4
 Enter a search term for repository names (e.g., 'backend', 'my-app'): okostine-panw
 DEBUG: Total repos available for search: 143
-DEBUG: Repository names extracted for search (143): ['PCS-LAB-ORG/c2c-sample-repo', 'PCS-LAB-ORG/WLtestrepo', 'kyle9021/pc-c2c-demo-GHA', 'PCS-LAB-ORG/LiveCommunity-mdalbes', 'PCS-LAB-ORG/git-test3-repo', 'hubeywarna/test/terragoat', 'PCS-LAB-ORG/Cortex-Cloud-APIs-Postman-Collection', 'PCS-LAB-ORG/game-of-life', 'PCS-LAB-ORG/deploy-resources', 'PCS-LAB-ORG/hello-code-sec']... (showing first 10)
+DEBUG: Repository names extracted for search (143): ['PCS-LAB-ORG/c2c-sample-repo', '']... (showing first 10)
 DEBUG: difflib.get_close_matches results for 'okostine-panw' (cutoff=0.4): ['okostine-panw/crapi', 'okostine-panw/pygoat', 'okostine-panw/aigoat', 'okostine-panw/badcode', 'okostine-panw/juice-shop', 'okostine-panw/terraform-goof', 'okostine-panw/kubernetes-goof', '806775482162247680_okostine-panw/cspm', 'okostine-panw/infrastructure-as-code-goof', '806775482162247680_okostine-panw/sastrules_workshop']
 
 Found 10 matching repositories:
@@ -219,7 +219,7 @@ Enter the number corresponding to the severity level: 4
 Selected severity level: CRITICAL
 Attempting to update notification scheme...
 Notification scheme updated successfully!
-Notification scheme 'OK-Others-Test_okostine-panw_okostine-panw_okostine-panw_BC_REPOS_Compute_Kubernetes_Monitoring_Networking_BC_CATEGORIES' successfully updated in Bridgecrew.
+Notification scheme 'OK-Others-Test_okostine-panw_okostine-panw_okostine-panw_BC_REPOS_Compute_Kubernetes_Monitoring_Networking_BC_CATEGORIES' successfully updated.
 
 Script finished in: 1.15 minutes.
   ```
