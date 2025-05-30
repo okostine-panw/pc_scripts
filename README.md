@@ -84,6 +84,10 @@ See config.jsonc for more options
 main-update-collections.py - update collections for hosts dynamically matching host filter, works for two types: hosts for clusters, etc. and for defenders based collections (registry scanning)
 See config-collections.jsonc for more options
 
+### pc_update_code_notifications_search.py
+pc_update_code_notifications_search.py update existing AppSec Code notifications for repository selection and Error categories. Allows selection of all Public, all private, all repos and search for repositories names to be included, selection of error categories policies to include and severity level. Integration must be already selected via UI to beable to use the script to update notification config for the existing rule. Saves csv file for the processed notification rule repos and policies for debugging.
+
+## Usage
 #### ### main-vulntags-baseline.py Usage
   ```
 % uv run main-vulntags-baseline.py
@@ -127,4 +131,95 @@ See config-collections.jsonc for more options
 2025-03-14 12:02:58 - INFO - process_tags - 552 - Ignore-Baseline-310325 Tag updated successfully for 29 vulnerabilities.
 Total vulnerabilities processed across all tags: 29
 2025-03-14 12:02:58 - INFO - main - 616 - Time taken: 0.05 minutes
+  ```
+### pc_update_code_notifications_search.py usage
+  ```
+okostine@M-NVQ4Q57WW1 cloudskates % uv run pc_update_code_notifications_search.py
+Token expired or not available, refreshing...
+Fetching policies from https://api2.prismacloud.io/bridgecrew/api/v2/policies...
+Successfully fetched policies from the API.
+
+Available policy categories:
+  1. Compute
+  2. Drift
+  3. General
+  4. IAM
+  5. Kubernetes
+  6. Licenses
+  7. Logging
+  8. Monitoring
+  9. Networking
+  10. Public
+  11. Sast
+  12. Secrets
+  13. Storage
+  14. Vulnerabilities
+  0. Select all (do not exclude any categories by category)
+Enter numbers of categories to INCLUDE, separated by commas (e.g., 1,3,5), or 0 for all: 1,5,9,8
+Selected categories for inclusion: Compute, Kubernetes, Networking, Monitoring
+Successfully saved data to bridgecrew_policies.csv
+
+==================================================
+
+Fetching all repositories from API for selection...
+Fetching repositories from https://api2.prismacloud.io/code/api/v1/repositories...
+Successfully fetched repositories from the API.
+Successfully fetched 143 repositories from the API.
+
+---
+## Repository Selection Options
+How would you like to select repositories?
+1. Public Repositories Only
+2. Private Repositories Only
+3. All Repositories (Public and Private)
+4. Search Repositories by Name
+
+Please enter the number corresponding to your choice (1, 2, 3, or 4): 4
+Enter a search term for repository names (e.g., 'backend', 'my-app'): okostine-panw
+DEBUG: Total repos available for search: 143
+DEBUG: Repository names extracted for search (143): ['PCS-LAB-ORG/c2c-sample-repo', 'PCS-LAB-ORG/WLtestrepo', 'kyle9021/pc-c2c-demo-GHA', 'PCS-LAB-ORG/LiveCommunity-mdalbes', 'PCS-LAB-ORG/git-test3-repo', 'hubeywarna/test/terragoat', 'PCS-LAB-ORG/Cortex-Cloud-APIs-Postman-Collection', 'PCS-LAB-ORG/game-of-life', 'PCS-LAB-ORG/deploy-resources', 'PCS-LAB-ORG/hello-code-sec']... (showing first 10)
+DEBUG: difflib.get_close_matches results for 'okostine-panw' (cutoff=0.4): ['okostine-panw/crapi', 'okostine-panw/pygoat', 'okostine-panw/aigoat', 'okostine-panw/badcode', 'okostine-panw/juice-shop', 'okostine-panw/terraform-goof', 'okostine-panw/kubernetes-goof', '806775482162247680_okostine-panw/cspm', 'okostine-panw/infrastructure-as-code-goof', '806775482162247680_okostine-panw/sastrules_workshop']
+
+Found 10 matching repositories:
+  1. okostine-panw/crAPI (Public: True)
+  2. okostine-panw/pygoat (Public: True)
+  3. okostine-panw/AIGoat (Public: True)
+  4. okostine-panw/badCode (Public: True)
+  5. okostine-panw/juice-shop (Public: True)
+  6. okostine-panw/terraform-goof (Public: True)
+  7. okostine-panw/kubernetes-goof (Public: True)
+  8. 806775482162247680_okostine-panw/cspm (Public: False)
+  9. okostine-panw/infrastructure-as-code-goof (Public: True)
+  10. 806775482162247680_okostine-panw/sastrules_workshop (Public: False)
+  0. Select none / Go back to previous menu
+  Enter 'all' to select all 10 found repos.
+Enter numbers of repositories to INCLUDE, separated by commas (e.g., 1,3,5), or 'all', or 0 to go back: all
+All 10 repositories from search results selected.
+Successfully saved data to bridgecrew_repositories.csv
+
+==================================================
+
+Starting pcNotifications update process...
+Fetching notification schemes from https://api2.prismacloud.io/bridgecrew/api/v1/vcs/settings/scheme...
+Successfully fetched notification schemes.
+Available pcNotifications schemes (deduplicated):
+  1. Name: OK-Others-Test_okostine-panw_okostine-panw_BC_REPOS_Compute_Drift_General_BC_CATEGORIES
+  2. Name: OK-Secrets-Test_ALL_PUBLIC_REPOS_BC_REPOS_Secrets_BC_CATEGORIES
+  3. Name: OK-Vulnerabilities-Test_ALL_REPOS_BC_REPOS_Vulnerabilities_BC_CATEGORIES
+Enter the number of the pcNotifications scheme to update (or 'q' to skip): 1
+Selected for update: OK-Others-Test_okostine-panw_okostine-panw_okostine-panw_BC_REPOS_Compute_Kubernetes_Monitoring_Networking_BC_CATEGORIES
+Retrieved existing integrationId for 'OK-Others-Test_okostine-panw_okostine-panw_BC_REPOS_Compute_Drift_General_BC_CATEGORIES': c71c9a24-0d59-4198-929e-35678e63fb9b
+
+Select severity level:
+  1. LOW
+  2. MEDIUM
+  3. HIGH
+  4. CRITICAL
+Enter the number corresponding to the severity level: 4
+Selected severity level: CRITICAL
+Attempting to update notification scheme...
+Notification scheme updated successfully!
+Notification scheme 'OK-Others-Test_okostine-panw_okostine-panw_okostine-panw_BC_REPOS_Compute_Kubernetes_Monitoring_Networking_BC_CATEGORIES' successfully updated in Bridgecrew.
+
+Script finished in: 1.15 minutes.
   ```
