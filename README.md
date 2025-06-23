@@ -89,6 +89,9 @@ pc_update_code_notifications_search.py - update an existing AppSec Code notifica
 Requires Prisma Cloud AppSec Admin role to modify notification rules config.
 Search is performed with fuzzy logic, current similarity_threshold=0.4, increase the threshold value to get more granular results.
 
+### pc_update_agentless_hub_mode.py
+pc_update_agentless_hub_mode.py - update onboarded accounts/subscriptions from default same-account scan mode to hub scan mode
+
 ## Usage
 #### ### main-vulntags-baseline.py Usage
   ```
