@@ -90,7 +90,7 @@ Requires Prisma Cloud AppSec Admin role to modify notification rules config.
 Search is performed with fuzzy logic, current similarity_threshold=0.4, increase the threshold value to get more granular results.
 
 ### pc_update_agentless_hub_mode.py
-pc_update_agentless_hub_mode.py - update onboarded accounts/subscriptions from default same-account scan mode to hub scan mode
+pc_update_agentless_hub_mode.py - update onboarded accounts/subscriptions from default same-account scan mode to hub scan mode. This script will discover any accounts that are onboarded and set to the default scan mode to hub-scan mode with your desired hub mode and regions instead.
 
 ## Usage
 #### ### main-vulntags-baseline.py Usage
